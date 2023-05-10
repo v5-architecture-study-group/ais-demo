@@ -1,5 +1,6 @@
 package com.example.demo.ais.util;
 
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -12,6 +13,8 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
     public abstract T get();
 
     public abstract <E> Result<E> map(Function<T, E> mappingFunction);
+
+    public abstract void doIfSuccessful(Consumer<T> consumer);
 
     public abstract boolean isSuccessful();
 
@@ -62,6 +65,11 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
         }
 
         @Override
+        public void doIfSuccessful(Consumer<T> consumer) {
+            consumer.accept(value);
+        }
+
+        @Override
         public boolean isSuccessful() {
             return true;
         }
@@ -98,6 +106,11 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
         @Override
         public <E> Result<E> map(Function<T, E> mappingFunction) {
             return new Failure<>(reason);
+        }
+
+        @Override
+        public void doIfSuccessful(Consumer<T> consumer) {
+            // NOP
         }
 
         @Override
