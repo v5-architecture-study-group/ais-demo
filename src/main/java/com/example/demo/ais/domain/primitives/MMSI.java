@@ -1,5 +1,7 @@
 package com.example.demo.ais.domain.primitives;
 
+import java.util.Objects;
+
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -20,11 +22,28 @@ public final class MMSI {
         this.mmsi = mmsi;
     }
 
+    public String value() {
+        return mmsi;
+    }
+
     private static boolean hasAsciiDigitsOnly(String s) {
         return s.chars().allMatch(MMSI::isAsciiDigit);
     }
 
     private static boolean isAsciiDigit(int c) {
         return (c >= '0') && (c <= '9');
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MMSI mmsi1 = (MMSI) o;
+        return Objects.equals(mmsi, mmsi1.mmsi);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(mmsi);
     }
 }
