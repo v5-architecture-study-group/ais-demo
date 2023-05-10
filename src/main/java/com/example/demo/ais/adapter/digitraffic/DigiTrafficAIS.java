@@ -23,10 +23,7 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -39,6 +36,9 @@ class DigiTrafficAIS implements AIS {
     private static final String VESSEL_LOCATIONS_URL = "https://meri.digitraffic.fi/api/ais/v1/locations";
     private static final String MQTT_URL = "wss://meri.digitraffic.fi:443/mqtt";
     private static final String ALL_LOCATIONS_TOPIC = "vessels-v2/+/location";
+    private static final int SUBSCRIBER_NOTIFICATION_JOB_QUEUE_CAPACITY = 1000;
+    private static final int MQTT_CONNECTION_TIMEOUT_SECONDS = 10;
+    private static final int MQTT_RETRY_INTERVAL_SECONDS = 60;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final IMqttClient mqttClient;
@@ -50,7 +50,7 @@ class DigiTrafficAIS implements AIS {
         restTemplate = new RestTemplate();
         objectMapper = new ObjectMapper();
         mqttReconnectionThread = Executors.newSingleThreadScheduledExecutor();
-        subscriberNotificationThread = Executors.newSingleThreadExecutor();
+        subscriberNotificationThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(SUBSCRIBER_NOTIFICATION_JOB_QUEUE_CAPACITY));
         mqttClient = new MqttClient(MQTT_URL, APPLICATION_NAME);
         mqttClient.setCallback(new MqttCallback() {
             @Override
@@ -76,7 +76,7 @@ class DigiTrafficAIS implements AIS {
             var options = new MqttConnectOptions();
             options.setAutomaticReconnect(false); // We're handling this manually to be able to re-subscribe
             options.setCleanSession(true);
-            options.setConnectionTimeout(10); // Seconds
+            options.setConnectionTimeout(MQTT_CONNECTION_TIMEOUT_SECONDS); // Seconds
 
             log.info("Trying to connect to MQTT");
             mqttClient.connect();
@@ -90,8 +90,8 @@ class DigiTrafficAIS implements AIS {
     }
 
     private void scheduleConnectToMqtt() {
-        log.info("Will try to connect to MQ in 1 minute");
-        mqttReconnectionThread.schedule(this::tryConnectToMqtt, 1, TimeUnit.MINUTES);
+        log.info("Will try to connect to MQ in {} seconds", MQTT_RETRY_INTERVAL_SECONDS);
+        mqttReconnectionThread.schedule(this::tryConnectToMqtt, MQTT_RETRY_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @PreDestroy
@@ -197,7 +197,11 @@ class DigiTrafficAIS implements AIS {
     }
 
     private void notifySubscribersOfVesselLocationChange(VesselLocation newVesselLocation) {
-        subscriberNotificationThread.submit(() -> vesselLocationChangeSubscribers.visit(subscriber -> subscriber.accept(newVesselLocation)));
+        try {
+            subscriberNotificationThread.submit(() -> vesselLocationChangeSubscribers.visit(subscriber -> subscriber.accept(newVesselLocation)));
+        } catch (RejectedExecutionException ex) {
+            log.warn("The subscriber notification thread is receiving more events than it can handle");
+        }
     }
 
     @Override
