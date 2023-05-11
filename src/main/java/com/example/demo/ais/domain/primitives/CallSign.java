@@ -15,7 +15,7 @@ public final class CallSign {
         if (callSign.length() > 10) { // In practice, most call signs are 4 or 5 characters, but I'm not sure if they can't be longer
             throw new IllegalArgumentException("callSign must not be longer than 10 characters");
         }
-        if (!StringUtils.hasAsciiDigitsAndLettersOnly(callSign)) {
+        if (!StringUtils.hasAsciiDigitsOrLettersOnly(callSign)) {
             throw new IllegalArgumentException("callSign must consist of ASCII numbers and letters only");
         }
         this.callSign = callSign;

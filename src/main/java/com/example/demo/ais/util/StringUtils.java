@@ -9,7 +9,7 @@ public final class StringUtils {
         return s.chars().allMatch(StringUtils::isAsciiDigit);
     }
 
-    public static boolean hasAsciiDigitsAndLettersOnly(String s) {
+    public static boolean hasAsciiDigitsOrLettersOnly(String s) {
         return s.chars().allMatch(StringUtils::isAsciiDigitOrLetter);
     }
 
