@@ -1,5 +1,7 @@
 package com.example.demo.ais.domain.primitives;
 
+import com.example.demo.ais.util.StringUtils;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -16,7 +18,7 @@ public final class MMSI {
         if (mmsi.length() != 9) {
             throw new IllegalArgumentException("MMSI must consist of exactly 9 characters");
         }
-        if (!hasAsciiDigitsOnly(mmsi)) {
+        if (!StringUtils.hasAsciiDigitsOnly(mmsi)) {
             throw new IllegalArgumentException("MMSI must consist of numbers only");
         }
         this.mmsi = mmsi;
@@ -24,14 +26,6 @@ public final class MMSI {
 
     public String value() {
         return mmsi;
-    }
-
-    private static boolean hasAsciiDigitsOnly(String s) {
-        return s.chars().allMatch(MMSI::isAsciiDigit);
-    }
-
-    private static boolean isAsciiDigit(int c) {
-        return (c >= '0') && (c <= '9');
     }
 
     @Override
