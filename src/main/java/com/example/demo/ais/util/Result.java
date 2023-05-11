@@ -20,6 +20,8 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
 
     public abstract String reason();
 
+    public abstract Result<T> doOnError(Consumer<String> errorHandler);
+
     public static <T> Result<T> success(T value) {
         return new Success<>(value);
     }
@@ -78,6 +80,11 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
         public String reason() {
             return "The operation was successful";
         }
+
+        @Override
+        public Result<T> doOnError(Consumer<String> errorHandler) {
+            return this;
+        }
     }
 
     public static final class Failure<T> extends Result<T> {
@@ -121,6 +128,12 @@ public abstract sealed class Result<T> permits Result.Success, Result.Failure {
         @Override
         public String reason() {
             return reason;
+        }
+
+        @Override
+        public Result<T> doOnError(Consumer<String> errorHandler) {
+            errorHandler.accept(reason());
+            return this;
         }
     }
 }
