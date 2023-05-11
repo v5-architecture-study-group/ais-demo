@@ -1,7 +1,7 @@
 package com.example.demo.ais.adapter.digitraffic;
 
 import com.example.demo.ais.service.spi.AIS;
-import org.eclipse.paho.client.mqttv3.MqttException;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -15,9 +15,9 @@ class AISConfig {
 
     @Bean
     @ConditionalOnProperty(name = "ais.source", havingValue = "digitraffic")
-    public AIS digitTrafficAIS() throws MqttException {
+    public AIS digitTrafficAIS(MeterRegistry meterRegistry) {
         log.info("Loading AIS data from Digitraffic");
-        return new DigiTrafficAIS();
+        return new DigiTrafficAIS(meterRegistry);
     }
 
     @Bean

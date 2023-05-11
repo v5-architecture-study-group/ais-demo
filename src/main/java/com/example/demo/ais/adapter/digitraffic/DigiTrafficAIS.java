@@ -6,8 +6,8 @@ import com.example.demo.ais.domain.events.VesselEvent;
 import com.example.demo.ais.service.spi.AIS;
 import com.example.demo.ais.util.Result;
 import com.example.demo.ais.util.Subscription;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PreDestroy;
-import org.eclipse.paho.client.mqttv3.MqttException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +24,12 @@ class DigiTrafficAIS implements AIS {
     private final ScheduledExecutorService mqttReconnectionThread;
     private final ExecutorService subscriberNotificationThread;
 
-    public DigiTrafficAIS() throws MqttException {
+    public DigiTrafficAIS(MeterRegistry meterRegistry) {
         log.info("Starting MQTT reconnection thread");
         mqttReconnectionThread = Executors.newSingleThreadScheduledExecutor();
         log.info("Starting subscriber notification thread");
         subscriberNotificationThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(SUBSCRIBER_NOTIFICATION_JOB_QUEUE_CAPACITY));
-        mqttClient = new DigiTrafficMqttClient(mqttReconnectionThread, subscriberNotificationThread);
+        mqttClient = new DigiTrafficMqttClient(mqttReconnectionThread, subscriberNotificationThread, meterRegistry);
     }
 
     @PreDestroy

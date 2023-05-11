@@ -11,6 +11,8 @@ import com.example.demo.ais.util.SubscriberList;
 import com.example.demo.ais.util.Subscription;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,18 +31,28 @@ class DigiTrafficMqttClient {
 
     private static final Logger log = LoggerFactory.getLogger(DigiTrafficMqttClient.class);
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(60);
+    private static final Duration RETRY_INTERVAL = Duration.ofSeconds(10);
     private final ScheduledExecutorService mqttReconnectionThread;
     private final ExecutorService subscriberNotificationThread;
     private final SubscriberList<Consumer<VesselEvent>> vesselEventSubscribers = new SubscriberList<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final IMqttClient mqttClient;
+    private final Counter receivedStatusMessages;
+    private final Counter receivedVesselLocationMessages;
+    private final Counter receivedVesselMetadataMessages;
+    private final Counter reconnects;
 
     DigiTrafficMqttClient(
             ScheduledExecutorService mqttReconnectionThread,
-            ExecutorService subscriberNotificationThread) {
+            ExecutorService subscriberNotificationThread,
+            MeterRegistry meterRegistry) {
         this.mqttReconnectionThread = mqttReconnectionThread;
         this.subscriberNotificationThread = subscriberNotificationThread;
+        this.receivedStatusMessages = meterRegistry.counter("ais.mqtt.status.received-messages");
+        this.receivedVesselLocationMessages = meterRegistry.counter("ais.mqtt.vessel-location.received-messages");
+        this.receivedVesselMetadataMessages = meterRegistry.counter("ais.mqtt.vessel-metadata.received-messages");
+        this.reconnects = meterRegistry.counter("ais.mqtt.reconnects");
+
         try {
             mqttClient = new MqttClient(MQTT_URL, APPLICATION_NAME);
         } catch (MqttException ex) {
@@ -90,11 +102,12 @@ class DigiTrafficMqttClient {
 
             log.info("Trying to connect to MQTT");
             mqttClient.connect();
+            reconnects.increment();
 
             log.info("Connected to MQTT, subscribing to topics");
             mqttClient.subscribe(ALL_LOCATIONS_TOPIC, 0, this::onVesselLocationChangeMessage);
             mqttClient.subscribe(ALL_VESSELS_TOPIC, 0, this::onVesselMetadataChangeMessage);
-            mqttClient.subscribe(VESSELS_STATUS_TOPIC, 0, (topic, message) -> { /* NOOP */ });
+            mqttClient.subscribe(VESSELS_STATUS_TOPIC, 0, (topic, message) -> receivedStatusMessages.increment());
             log.info("Ready to receive MQTT messages");
         } catch (Throwable ex) {
             log.warn("Error connecting to MQTT", ex);
@@ -108,6 +121,7 @@ class DigiTrafficMqttClient {
     }
 
     private void onVesselLocationChangeMessage(String topic, MqttMessage message) {
+        receivedVesselLocationMessages.increment();
         convertToVesselLocation(topic, message)
                 .doOnError(reason -> log.error("Error processing vessel location change message: {}", reason))
                 .doIfSuccessful(this::notifySubscribersOfVesselLocationChange);
@@ -133,6 +147,7 @@ class DigiTrafficMqttClient {
     }
 
     private void onVesselMetadataChangeMessage(String topic, MqttMessage message) {
+        receivedVesselMetadataMessages.increment();
         convertToVesselData(topic, message)
                 .doOnError(reason -> log.error("Error processing vessel metadata change message: {}", reason))
                 .doIfSuccessful(this::notifySubscribersOfVesselDataChange);
