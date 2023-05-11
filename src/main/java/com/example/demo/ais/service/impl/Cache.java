@@ -13,27 +13,27 @@ import static java.util.Objects.requireNonNull;
 class Cache<K, V extends Identifiable<K>> {
 
     private final ConcurrentHashMap<K, V> cache = new ConcurrentHashMap<>();
-    private final Predicate<? super V> filter;
+    private final Predicate<? super V> includeOnlyItemsMatching;
 
     Cache(Collection<V> initialData) {
         this(initialData, null);
     }
 
-    Cache(Collection<V> initialData, Predicate<? super V> filter) {
+    Cache(Collection<V> initialData, Predicate<? super V> includeOnlyItemsMatching) {
         requireNonNull(initialData, "initialData must not be null");
-        this.filter = filter;
-        if (filter == null) {
+        this.includeOnlyItemsMatching = includeOnlyItemsMatching;
+        if (includeOnlyItemsMatching == null) {
             initialData.forEach(v -> cache.put(v.id(), v));
         } else {
-            initialData.stream().filter(filter).forEach(v -> cache.put(v.id(), v));
+            initialData.stream().filter(includeOnlyItemsMatching).forEach(v -> cache.put(v.id(), v));
         }
     }
 
     Optional<V> get(K key) {
-        if (filter == null) {
+        if (includeOnlyItemsMatching == null) {
             return Optional.ofNullable(cache.get(key));
         } else {
-            return Optional.ofNullable(cache.get(key)).filter(filter);
+            return Optional.ofNullable(cache.get(key)).filter(includeOnlyItemsMatching);
         }
     }
 
@@ -47,7 +47,7 @@ class Cache<K, V extends Identifiable<K>> {
 
     void put(V value) {
         requireNonNull(value, "value must not be null");
-        if (filter == null || filter.test(value)) {
+        if (includeOnlyItemsMatching == null || includeOnlyItemsMatching.test(value)) {
             cache.put(value.id(), value);
         } else {
             cache.remove(value.id());

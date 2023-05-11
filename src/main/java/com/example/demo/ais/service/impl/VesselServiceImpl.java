@@ -46,7 +46,7 @@ class VesselServiceImpl implements VesselService {
         this.clock = clock;
         this.eventDispatcherThread = Executors.newSingleThreadScheduledExecutor();
         this.vesselEventDispatcher = new TumblingWindowEventDispatcher<>(eventDispatcherThread, EVENT_WINDOW_SIZE);
-        this.vesselLocationCache = new Cache<>(ais.loadAllVesselLocations().orElse(Collections.emptySet()), this::isOutdated);
+        this.vesselLocationCache = new Cache<>(ais.loadAllVesselLocations().orElse(Collections.emptySet()), this::isNotOutdated);
         this.vesselDataCache = new Cache<>(ais.loadAllVesselData().orElse(Collections.emptySet()));
 
         Gauge.builder("vessel-service.cache.vessel-location.size", this.vesselDataCache::size).register(meterRegistry);
@@ -55,9 +55,9 @@ class VesselServiceImpl implements VesselService {
         ais.subscribeToVesselEvents(this::onVesselEvent); // No need to unsubscribe; cache and service have the same scope
     }
 
-    private boolean isOutdated(VesselLocation vesselLocation) {
-        var now = clock.instant();
-        return Duration.between(vesselLocation.timestamp(), now).compareTo(VESSEL_LOCATION_MAX_AGE) < 0;
+    private boolean isNotOutdated(VesselLocation vesselLocation) {
+        var oldestAcceptedLocationUpdate = clock.instant().minus(VESSEL_LOCATION_MAX_AGE);
+        return vesselLocation.timestamp().toEpochMilli() == 0 || oldestAcceptedLocationUpdate.isBefore(vesselLocation.timestamp());
     }
 
     @PreDestroy
@@ -80,11 +80,11 @@ class VesselServiceImpl implements VesselService {
 
     private void onVesselLocationUpdatedEvent(VesselLocationUpdatedEvent event) {
         var location = event.vesselLocation();
-        if (isOutdated(location)) {
-            onVesselLocationOutdatedEvent(new VesselLocationOutdatedEvent(location.mmsi(), clock.instant()));
-        } else {
+        if (isNotOutdated(location)) {
             vesselLocationCache.put(location);
             vesselEventDispatcher.enqueue(event);
+        } else {
+            onVesselLocationOutdatedEvent(new VesselLocationOutdatedEvent(location.mmsi(), clock.instant()));
         }
     }
 
