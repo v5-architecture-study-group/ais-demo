@@ -32,6 +32,7 @@ class DigiTrafficMqttClient {
     private static final Logger log = LoggerFactory.getLogger(DigiTrafficMqttClient.class);
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration RETRY_INTERVAL = Duration.ofSeconds(10);
+    private static final Duration KEEP_ALIVE_INTERVAL = Duration.ofMinutes(1);
     private final ScheduledExecutorService mqttReconnectionThread;
     private final ExecutorService subscriberNotificationThread;
     private final SubscriberList<Consumer<VesselEvent>> vesselEventSubscribers = new SubscriberList<>();
@@ -40,7 +41,9 @@ class DigiTrafficMqttClient {
     private final Counter receivedStatusMessages;
     private final Counter receivedVesselLocationMessages;
     private final Counter receivedVesselMetadataMessages;
-    private final Counter reconnects;
+    private final Counter receivedMessages;
+    private final Counter connectionsLost;
+    private final Counter connectionsOpened;
 
     DigiTrafficMqttClient(
             ScheduledExecutorService mqttReconnectionThread,
@@ -51,23 +54,27 @@ class DigiTrafficMqttClient {
         this.receivedStatusMessages = meterRegistry.counter("ais.mqtt.status.received-messages");
         this.receivedVesselLocationMessages = meterRegistry.counter("ais.mqtt.vessel-location.received-messages");
         this.receivedVesselMetadataMessages = meterRegistry.counter("ais.mqtt.vessel-metadata.received-messages");
-        this.reconnects = meterRegistry.counter("ais.mqtt.reconnects");
+        this.receivedMessages = meterRegistry.counter("ais.mqtt.received-messages");
+        this.connectionsLost = meterRegistry.counter("ais.mqtt.connections.lost");
+        this.connectionsOpened = meterRegistry.counter("ais.mqtt.connections.opened");
 
         try {
             mqttClient = new MqttClient(MQTT_URL, APPLICATION_NAME);
         } catch (MqttException ex) {
             throw new IllegalStateException("Could not create MqttClient", ex);
         }
+        mqttClient.setManualAcks(false);
         mqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
                 log.warn("Lost connection to MQTT");
+                connectionsLost.increment();
                 scheduleConnectToMqtt();
             }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) {
-                // NOP
+                receivedMessages.increment();
             }
 
             @Override
@@ -99,12 +106,13 @@ class DigiTrafficMqttClient {
             options.setAutomaticReconnect(false); // We're handling this manually to be able to re-subscribe
             options.setCleanSession(true);
             options.setConnectionTimeout((int) CONNECTION_TIMEOUT.toSeconds());
+            options.setKeepAliveInterval((int) KEEP_ALIVE_INTERVAL.toSeconds());
+            options.setHttpsHostnameVerificationEnabled(true);
 
-            log.info("Trying to connect to MQTT");
+            log.info("Connecting to MQTT");
             mqttClient.connect();
-            reconnects.increment();
+            connectionsOpened.increment();
 
-            log.info("Connected to MQTT, subscribing to topics");
             mqttClient.subscribe(ALL_LOCATIONS_TOPIC, 0, this::onVesselLocationChangeMessage);
             mqttClient.subscribe(ALL_VESSELS_TOPIC, 0, this::onVesselMetadataChangeMessage);
             mqttClient.subscribe(VESSELS_STATUS_TOPIC, 0, (topic, message) -> receivedStatusMessages.increment());

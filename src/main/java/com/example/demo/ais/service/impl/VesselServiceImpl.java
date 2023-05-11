@@ -9,6 +9,7 @@ import com.example.demo.ais.domain.events.VesselLocationUpdatedEvent;
 import com.example.demo.ais.domain.primitives.Envelope;
 import com.example.demo.ais.domain.primitives.MMSI;
 import com.example.demo.ais.service.api.VesselService;
+import com.example.demo.ais.service.dpo.VesselDetails;
 import com.example.demo.ais.service.spi.AIS;
 import com.example.demo.ais.util.Subscription;
 import com.example.demo.ais.util.TumblingWindowEventDispatcher;
@@ -101,12 +102,18 @@ class VesselServiceImpl implements VesselService {
     }
 
     @Override
-    public Optional<VesselData> findVesselData(MMSI mmsi) {
-        return vesselDataCache.get(mmsi);
+    public Optional<VesselDetails> findVesselDetails(MMSI mmsi) {
+        var vesselData = vesselDataCache.get(mmsi);
+        var vesselLocation = vesselLocationCache.get(mmsi);
+        if (vesselData.isEmpty() && vesselLocation.isEmpty()) {
+            return Optional.empty();
+        } else {
+            return Optional.of(new VesselDetails(mmsi, vesselData.orElse(null), vesselLocation.orElse(null)));
+        }
     }
 
     @Override
-    public Collection<VesselData> findVesselData(String searchTerm, int maxResultSize) {
+    public Collection<VesselDetails> findVesselDetails(String searchTerm, int maxResultSize) {
         requireNonNull(searchTerm, "searchTerm must not be null");
         var sanitizedSearchTerm = searchTerm.toLowerCase().trim();
         if (sanitizedSearchTerm.length() < 3 || sanitizedSearchTerm.length() > 50) {
@@ -115,6 +122,7 @@ class VesselServiceImpl implements VesselService {
         return vesselDataCache.values()
                 .filter(searchTermMatches(sanitizedSearchTerm))
                 .limit(maxResultSize)
+                .map(vesselData -> new VesselDetails(vesselData.mmsi(), vesselData, vesselLocationCache.get(vesselData.mmsi()).orElse(null)))
                 .toList();
     }
 

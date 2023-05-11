@@ -30,7 +30,11 @@ class Cache<K, V extends Identifiable<K>> {
     }
 
     Optional<V> get(K key) {
-        return Optional.ofNullable(cache.get(key)).filter(filter);
+        if (filter == null) {
+            return Optional.ofNullable(cache.get(key));
+        } else {
+            return Optional.ofNullable(cache.get(key)).filter(filter);
+        }
     }
 
     Stream<V> values() {

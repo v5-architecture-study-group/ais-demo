@@ -1,10 +1,10 @@
 package com.example.demo.ais.service.api;
 
-import com.example.demo.ais.domain.data.VesselData;
 import com.example.demo.ais.domain.data.VesselLocation;
 import com.example.demo.ais.domain.events.VesselEvent;
 import com.example.demo.ais.domain.primitives.Envelope;
 import com.example.demo.ais.domain.primitives.MMSI;
+import com.example.demo.ais.service.dpo.VesselDetails;
 import com.example.demo.ais.util.Subscription;
 
 import java.util.Collection;
@@ -16,9 +16,9 @@ public interface VesselService {
 
     Collection<VesselLocation> vesselLocations(Envelope envelope, int maxResultSize);
 
-    Optional<VesselData> findVesselData(MMSI mmsi);
+    Optional<VesselDetails> findVesselDetails(MMSI mmsi);
 
-    Collection<VesselData> findVesselData(String searchTerm, int maxResultSize);
+    Collection<VesselDetails> findVesselDetails(String searchTerm, int maxResultSize);
 
     Subscription subscribeToVesselEvents(Consumer<List<VesselEvent>> listener);
 }

@@ -1,0 +1,20 @@
+.vessel-details-popup UL.vessel-attributes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.vessel-details-popup .vessel-attributes LI + LI {
+    border-top: 1px dotted var(--lumo-contrast-20pct);
+}
+
+.vessel-details-popup .vessel-attributes .attribute-key {
+    font-weight: bold;
+    width: 170px;
+    display: inline-block;
+}
+
+.vessel-details-popup .vessel-attributes .attribute-value {
+    padding-left: var(--lumo-space-m);
+    display: inline-block;
+}
