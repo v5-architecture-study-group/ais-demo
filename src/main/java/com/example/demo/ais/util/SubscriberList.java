@@ -5,10 +5,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+
+import static java.util.Objects.requireNonNull;
 
 public final class SubscriberList<T> {
 
@@ -17,7 +18,7 @@ public final class SubscriberList<T> {
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public Subscription subscribe(T subscriber) {
-        Objects.requireNonNull(subscriber, "subscriber must not be null");
+        requireNonNull(subscriber, "subscriber must not be null");
         lock.writeLock().lock();
         try {
             subscribers.add(subscriber);
@@ -35,7 +36,12 @@ public final class SubscriberList<T> {
         };
     }
 
-    public void visit(Consumer<T> visitor) {
+    /**
+     * Performs the given action of each subscriber in the list. Any exceptions thrown by the action are silently
+     * logged.
+     */
+    public void forEach(Consumer<? super T> action) {
+        requireNonNull(action, "action must not be null");
         List<T> subscribersToVisit;
         lock.readLock().lock();
         try {
@@ -45,9 +51,9 @@ public final class SubscriberList<T> {
         }
         subscribersToVisit.forEach(subscriber -> {
             try {
-                visitor.accept(subscriber);
+                action.accept(subscriber);
             } catch (Throwable ex) {
-                log.error("Visitor threw an unexpected exception", ex);
+                log.error("Action threw an unexpected exception", ex);
             }
         });
     }
