@@ -23,6 +23,10 @@
             <artifactId>vaadin-spring-boot-starter</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.paho</groupId>
             <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
             <version>1.2.5</version>
@@ -45,6 +49,13 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>--enable-preview</compilerArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>
