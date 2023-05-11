@@ -88,8 +88,8 @@ public final class ShipType {
     private final int shipType;
 
     public ShipType(int shipType) {
-        if (shipType < 0 || shipType > 99) {
-            throw new IllegalArgumentException("shipType must be between 0 and 99");
+        if (shipType < 0 || shipType > 999) {
+            throw new IllegalArgumentException("shipType must be between 0 and 999");
         }
         this.shipType = shipType;
     }
@@ -99,11 +99,7 @@ public final class ShipType {
     }
 
     public String description() {
-        return SHIP_TYPE_CODES.getOrDefault(shipType, "Reserved for future use");
-    }
-
-    public boolean isReservedForFutureUse() {
-        return !SHIP_TYPE_CODES.containsKey(shipType);
+        return SHIP_TYPE_CODES.getOrDefault(shipType, "Unknown");
     }
 
     @Override

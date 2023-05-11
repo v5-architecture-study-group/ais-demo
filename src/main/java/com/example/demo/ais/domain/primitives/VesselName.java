@@ -1,5 +1,7 @@
 package com.example.demo.ais.domain.primitives;
 
+import com.example.demo.ais.util.StringUtils;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -10,23 +12,29 @@ public final class VesselName {
 
     public VesselName(String vesselName) {
         requireNonNull(vesselName, "vesselName must not be null");
-        if (vesselName.length() > 50) {
+        var trimmedVesselName = vesselName.strip();
+
+        if (trimmedVesselName.length() > 50) {
             throw new IllegalArgumentException("vesselName must not be longer than 50 characters");
         }
-        if (!hasAllowedCharactersOnly(vesselName)) {
-            throw new IllegalArgumentException("vesselName contains illegal characters");
-        }
-        this.vesselName = vesselName;
+        this.vesselName = sanitizeVesselName(trimmedVesselName);
     }
 
-    private static boolean hasAllowedCharactersOnly(String s) {
-        return s.chars().allMatch(codePoint ->
-                Character.isLetterOrDigit(codePoint)
-                        || Character.isWhitespace(codePoint)
-                        || codePoint == '-'
-                        || codePoint == '/'
-                        || codePoint == '.'
-        );
+    /**
+     * The vessel names can contain all kinds of junk.
+     */
+    private static String sanitizeVesselName(String s) {
+        return StringUtils.stripMatching(s, codePoint -> !isAllowedCharacter(codePoint));
+    }
+
+    private static boolean isAllowedCharacter(int codePoint) {
+        return Character.isLetterOrDigit(codePoint)
+                || Character.isWhitespace(codePoint)
+                || codePoint == '-'
+                || codePoint == '_'
+                || codePoint == '/'
+                || codePoint == '.'
+                || codePoint == '\'';
     }
 
     public String value() {

@@ -22,7 +22,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 
@@ -54,24 +53,25 @@ class DigiTrafficRestClient {
     private Collection<VesselLocation> convertToVesselLocations(FeatureCollection featureCollection) {
         return Arrays.stream(featureCollection.features())
                 .flatMap(this::convertToVesselLocation)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private Stream<VesselLocation> convertToVesselLocation(Feature feature) {
         try {
             var timestamp = Instant.ofEpochMilli(feature.properties().timestampExternal());
-            var mmsi = new MMSI(String.valueOf(feature.mmsi()));
+            var mmsi = MMSI.fromInt(feature.mmsi());
             if (!"point".equalsIgnoreCase(feature.geometry().type())) {
                 log.warn("Unknown geometry while parsing vessel location");
                 return Stream.empty();
             }
             var lon = new Longitude(feature.geometry().coordinates()[0]);
             var lat = new Latitude(feature.geometry().coordinates()[1]);
-            var heading = new Heading(feature.properties().heading());
+            var heading = Heading.ofDegrees(feature.properties().heading());
             var position = feature.properties().posAcc() ? new AccuratePosition(lat, lon) : new InaccuratePosition(lat, lon);
             return Stream.of(new VesselLocation(timestamp, mmsi, position, heading));
         } catch (Throwable ex) {
-            log.warn("Exception while parsing vessel location", ex);
+            log.debug(feature.toString());
+            log.debug("Exception while parsing vessel location", ex);
             return Stream.empty();
         }
     }
@@ -89,19 +89,19 @@ class DigiTrafficRestClient {
     private Collection<VesselData> convertToVesselData(Collection<VesselMetadata> vesselMetadata) {
         return vesselMetadata.stream()
                 .flatMap(this::convertToVesselData)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private Stream<VesselData> convertToVesselData(VesselMetadata vesselMetadata) {
         try {
             var timestamp = Instant.ofEpochMilli(vesselMetadata.timestamp());
-            var mmsi = new MMSI(String.valueOf(vesselMetadata.mmsi()));
+            var mmsi = MMSI.fromInt(vesselMetadata.mmsi);
             var vesselName = new VesselName(vesselMetadata.name());
             var callSign = new CallSign(vesselMetadata.callSign());
             var shipType = new ShipType(vesselMetadata.shipType());
             return Stream.of(new VesselData(timestamp, mmsi, vesselName, callSign, shipType));
         } catch (Throwable ex) {
-            log.warn("Exception while parsing vessel metadata", ex);
+            log.debug("Exception while parsing vessel metadata", ex);
             return Stream.empty();
         }
     }

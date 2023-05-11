@@ -1,5 +1,7 @@
 package com.example.demo.ais.util;
 
+import java.util.function.IntPredicate;
+
 public final class StringUtils {
 
     private StringUtils() {
@@ -7,10 +9,6 @@ public final class StringUtils {
 
     public static boolean hasAsciiDigitsOnly(String s) {
         return s.chars().allMatch(StringUtils::isAsciiDigit);
-    }
-
-    public static boolean hasAsciiDigitsOrLettersOnly(String s) {
-        return s.chars().allMatch(StringUtils::isAsciiDigitOrLetter);
     }
 
     public static boolean isAsciiDigit(int c) {
@@ -23,5 +21,11 @@ public final class StringUtils {
 
     public static boolean isAsciiDigitOrLetter(int c) {
         return isAsciiDigit(c) || isAsciiLetter(c);
+    }
+
+    public static String stripMatching(String s, IntPredicate predicate) {
+        var sb = new StringBuilder();
+        s.chars().filter(i -> !predicate.test(i)).forEach(sb::appendCodePoint);
+        return sb.toString();
     }
 }

@@ -7,17 +7,31 @@ import java.util.Objects;
  */
 public final class Heading {
 
+    private static final int UNAVAILABLE_HEADING = 511;
+    public static final Heading UNAVAILABLE = new Heading(UNAVAILABLE_HEADING);
     private final int heading;
 
-    public Heading(int heading) {
-        if (heading < 0 || heading > 360) {
-            throw new IllegalArgumentException("Heading must be between 0° and 360°"); // 0 and 360 are the same direction, but we support both
+    private Heading(int heading) {
+        if (heading < 0 || (heading > 360 && heading != UNAVAILABLE_HEADING)) {
+            throw new IllegalArgumentException("Heading must be between 0° and 360°");
         }
-        this.heading = heading;
+        this.heading = heading == 360 ? 0 : heading;
+    }
+
+    public static Heading ofDegrees(int heading) {
+        if (heading == UNAVAILABLE_HEADING) {
+            return Heading.UNAVAILABLE;
+        } else {
+            return new Heading(heading);
+        }
     }
 
     public int value() {
         return heading;
+    }
+
+    public boolean isUnavailable() {
+        return heading == UNAVAILABLE_HEADING;
     }
 
     @Override

@@ -12,13 +12,20 @@ public final class CallSign {
 
     public CallSign(String callSign) {
         requireNonNull(callSign, "callSign must not be null");
-        if (callSign.length() > 10) { // In practice, most call signs are 4 or 5 characters, but I'm not sure if they can't be longer
+        var trimmedCallSign = callSign.strip().toUpperCase();
+
+        if (trimmedCallSign.length() > 10) { // In practice, most call signs are 4 or 5 characters, but I'm not sure if they can't be longer
             throw new IllegalArgumentException("callSign must not be longer than 10 characters");
         }
-        if (!StringUtils.hasAsciiDigitsOrLettersOnly(callSign)) {
-            throw new IllegalArgumentException("callSign must consist of ASCII numbers and letters only");
-        }
-        this.callSign = callSign;
+        this.callSign = sanitizeCallSign(trimmedCallSign);
+    }
+
+    /**
+     * Call signs should only contain numbers and ASCII letters but because they can be entered into the system
+     * with all kinds of separator characters, we just remove them.
+     */
+    private static String sanitizeCallSign(String s) {
+        return StringUtils.stripMatching(s, codePoint -> !StringUtils.isAsciiDigitOrLetter(codePoint));
     }
 
     public String value() {

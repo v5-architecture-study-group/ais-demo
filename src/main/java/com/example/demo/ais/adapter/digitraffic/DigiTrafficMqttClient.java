@@ -49,6 +49,7 @@ class DigiTrafficMqttClient {
         mqttClient.setCallback(new MqttCallback() {
             @Override
             public void connectionLost(Throwable cause) {
+                log.warn("Lost connection to MQTT");
                 scheduleConnectToMqtt();
             }
 
@@ -93,6 +94,7 @@ class DigiTrafficMqttClient {
             log.info("Connected to MQTT, subscribing to topics");
             mqttClient.subscribe(ALL_LOCATIONS_TOPIC, 0, this::onVesselLocationChangeMessage);
             mqttClient.subscribe(ALL_VESSELS_TOPIC, 0, this::onVesselMetadataChangeMessage);
+            mqttClient.subscribe(VESSELS_STATUS_TOPIC, 0, (topic, message) -> { /* NOOP */ });
             log.info("Ready to receive MQTT messages");
         } catch (Throwable ex) {
             log.warn("Error connecting to MQTT", ex);
@@ -118,7 +120,7 @@ class DigiTrafficMqttClient {
             var timestamp = Instant.ofEpochMilli(vlm.time());
             var lon = new Longitude(vlm.lon());
             var lat = new Latitude(vlm.lat());
-            var heading = new Heading(vlm.heading());
+            var heading = Heading.ofDegrees(vlm.heading());
             var position = vlm.posAcc() ? new AccuratePosition(lat, lon) : new InaccuratePosition(lat, lon);
             return Result.success(new VesselLocation(timestamp, mmsi, position, heading));
         } catch (Throwable ex) {

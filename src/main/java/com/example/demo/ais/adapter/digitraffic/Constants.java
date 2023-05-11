@@ -11,5 +11,6 @@ final class Constants {
     static final String MQTT_URL = "wss://meri.digitraffic.fi:443/mqtt";
     static final String ALL_LOCATIONS_TOPIC = "vessels-v2/+/location";
     static final String ALL_VESSELS_TOPIC = "vessels-v2/+/metadata";
+    static final String VESSELS_STATUS_TOPIC = "vessels-v2/status";
 
 }

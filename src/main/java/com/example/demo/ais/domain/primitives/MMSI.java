@@ -24,6 +24,10 @@ public final class MMSI {
         this.mmsi = mmsi;
     }
 
+    public static MMSI fromInt(int mmsi) {
+        return new MMSI("%09d".formatted(mmsi));
+    }
+
     public String value() {
         return mmsi;
     }
