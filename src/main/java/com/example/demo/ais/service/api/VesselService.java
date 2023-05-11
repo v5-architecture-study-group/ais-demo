@@ -14,11 +14,11 @@ import java.util.function.Consumer;
 
 public interface VesselService {
 
-    Collection<VesselLocation> vesselLocations(Envelope envelope);
+    Collection<VesselLocation> vesselLocations(Envelope envelope, int maxResultSize);
 
     Optional<VesselData> findVesselData(MMSI mmsi);
 
-    Collection<VesselData> findVesselData(String searchTerm);
+    Collection<VesselData> findVesselData(String searchTerm, int maxResultSize);
 
     Subscription subscribeToVesselEvents(Consumer<List<VesselEvent>> listener);
 }

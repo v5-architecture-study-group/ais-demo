@@ -12,6 +12,8 @@ import com.example.demo.ais.service.api.VesselService;
 import com.example.demo.ais.service.spi.AIS;
 import com.example.demo.ais.util.Subscription;
 import com.example.demo.ais.util.TumblingWindowEventDispatcher;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
 
@@ -25,28 +27,30 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 
 @Service
 class VesselServiceImpl implements VesselService {
 
-    private static final int MAX_VESSEL_LOCATION_RESULTS = 1000;
-    private static final int MAX_VESSEL_DATA_RESULTS = 1000;
-    private static final Duration VESSEL_LOCATION_MAX_AGE = Duration.ofHours(1);
+    private static final Duration VESSEL_LOCATION_MAX_AGE = Duration.ofDays(1);
+    private static final Duration EVENT_WINDOW_SIZE = Duration.ofSeconds(1);
     private final Cache<MMSI, VesselLocation> vesselLocationCache;
     private final Cache<MMSI, VesselData> vesselDataCache;
     private final ScheduledExecutorService eventDispatcherThread;
     private final TumblingWindowEventDispatcher<VesselEvent> vesselEventDispatcher;
     private final Clock clock;
 
-    VesselServiceImpl(AIS ais, Clock clock) {
+    VesselServiceImpl(AIS ais, Clock clock, MeterRegistry meterRegistry) {
         this.clock = clock;
         this.eventDispatcherThread = Executors.newSingleThreadScheduledExecutor();
-        this.vesselEventDispatcher = new TumblingWindowEventDispatcher<>(eventDispatcherThread, Duration.ofSeconds(1));
+        this.vesselEventDispatcher = new TumblingWindowEventDispatcher<>(eventDispatcherThread, EVENT_WINDOW_SIZE);
         this.vesselLocationCache = new Cache<>(ais.loadAllVesselLocations().orElse(Collections.emptySet()), this::isOutdated);
         this.vesselDataCache = new Cache<>(ais.loadAllVesselData().orElse(Collections.emptySet()));
+
+        Gauge.builder("vessel-service.cache.vessel-location.size", this.vesselDataCache::size).register(meterRegistry);
+        Gauge.builder("vessel-service.cache.vessel-data.size", this.vesselDataCache::size).register(meterRegistry);
+
         ais.subscribeToVesselEvents(this::onVesselEvent); // No need to unsubscribe; cache and service have the same scope
     }
 
@@ -89,11 +93,11 @@ class VesselServiceImpl implements VesselService {
     }
 
     @Override
-    public Collection<VesselLocation> vesselLocations(Envelope envelope) {
+    public Collection<VesselLocation> vesselLocations(Envelope envelope, int maxResultSize) {
         return vesselLocationCache.values()
                 .filter(l -> envelope.contains(l.position()))
-                .limit(MAX_VESSEL_LOCATION_RESULTS)
-                .collect(Collectors.toList());
+                .limit(maxResultSize)
+                .toList();
     }
 
     @Override
@@ -102,7 +106,7 @@ class VesselServiceImpl implements VesselService {
     }
 
     @Override
-    public Collection<VesselData> findVesselData(String searchTerm) {
+    public Collection<VesselData> findVesselData(String searchTerm, int maxResultSize) {
         requireNonNull(searchTerm, "searchTerm must not be null");
         var sanitizedSearchTerm = searchTerm.toLowerCase().trim();
         if (sanitizedSearchTerm.length() < 3 || sanitizedSearchTerm.length() > 50) {
@@ -110,8 +114,8 @@ class VesselServiceImpl implements VesselService {
         }
         return vesselDataCache.values()
                 .filter(searchTermMatches(sanitizedSearchTerm))
-                .limit(MAX_VESSEL_DATA_RESULTS)
-                .collect(Collectors.toList());
+                .limit(maxResultSize)
+                .toList();
     }
 
     private Predicate<VesselData> searchTermMatches(String searchTerm) {
