@@ -1,6 +1,8 @@
 package com.example.demo.ais.service.spi;
 
-import com.example.demo.ais.service.dpo.VesselLocation;
+import com.example.demo.ais.domain.data.VesselData;
+import com.example.demo.ais.domain.data.VesselLocation;
+import com.example.demo.ais.domain.events.VesselEvent;
 import com.example.demo.ais.util.Result;
 import com.example.demo.ais.util.Subscription;
 
@@ -10,7 +12,9 @@ import java.util.function.Consumer;
 
 public interface AIS {
 
-    Result<Collection<VesselLocation>> findAllVesselLocations();
+    Result<Collection<VesselLocation>> loadAllVesselLocations();
 
-    Subscription subscribeToVesselLocationChanges(Consumer<VesselLocation> subscriber);
+    Result<Collection<VesselData>> loadAllVesselData();
+
+    Subscription subscribeToVesselEvents(Consumer<VesselEvent> subscriber);
 }
