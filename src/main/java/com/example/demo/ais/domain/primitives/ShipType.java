@@ -11,14 +11,13 @@ public final class ShipType {
 
     static {
         var shipTypes = new HashMap<Integer, String>();
-        shipTypes.put(0, "Not available (default)");
+        shipTypes.put(0, "Not available");
         shipTypes.putAll(Map.of(
-                20, "Wing in ground (WIG), all ships of this type",
+                20, "Wing in ground (WIG)",
                 21, "Wing in ground (WIG), Hazardous category A",
                 22, "Wing in ground (WIG), Hazardous category B",
                 23, "Wing in ground (WIG), Hazardous category C",
-                24, "Wing in ground (WIG), Hazardous category D",
-                25, "Wing in ground (WIG), Reserved for future use"
+                24, "Wing in ground (WIG), Hazardous category D"
         ));
         shipTypes.putAll(Map.of(
                 30, "Fishing",
@@ -31,7 +30,7 @@ public final class ShipType {
                 37, "Pleasure Craft"
         ));
         shipTypes.putAll(Map.of(
-                40, "High speed craft (HSC), all ships of this type",
+                40, "High speed craft (HSC)",
                 41, "High speed craft (HSC), Hazardous category A",
                 42, "High speed craft (HSC), Hazardous category B",
                 43, "High speed craft (HSC), Hazardous category C",
@@ -51,7 +50,7 @@ public final class ShipType {
                 59, "Noncombatant ship according to RR Resolution No. 18"
         ));
         shipTypes.putAll(Map.of(
-                60, "Passenger, all ships of this type",
+                60, "Passenger",
                 61, "Passenger, Hazardous category A",
                 62, "Passenger, Hazardous category B",
                 63, "Passenger, Hazardous category C",
@@ -59,7 +58,7 @@ public final class ShipType {
                 69, "Passenger, No additional information"
         ));
         shipTypes.putAll(Map.of(
-                70, "Cargo, all ships of this type",
+                70, "Cargo",
                 71, "Cargo, Hazardous category A",
                 72, "Cargo, Hazardous category B",
                 73, "Cargo, Hazardous category C",
@@ -67,7 +66,7 @@ public final class ShipType {
                 79, "Cargo, No additional information"
         ));
         shipTypes.putAll(Map.of(
-                80, "Tanker, all ships of this type",
+                80, "Tanker",
                 81, "Tanker, Hazardous category A",
                 82, "Tanker, Hazardous category B",
                 83, "Tanker, Hazardous category C",
@@ -75,7 +74,7 @@ public final class ShipType {
                 89, "Tanker, No additional information"
         ));
         shipTypes.putAll(Map.of(
-                90, "Other Type, all ships of this type",
+                90, "Other Type",
                 91, "Other Type, Hazardous category A",
                 92, "Other Type, Hazardous category B",
                 93, "Other Type, Hazardous category C",
@@ -99,7 +98,7 @@ public final class ShipType {
     }
 
     public String description() {
-        return SHIP_TYPE_CODES.getOrDefault(shipType, "Unknown");
+        return SHIP_TYPE_CODES.getOrDefault(shipType, "Unknown (%d)".formatted(shipType));
     }
 
     @Override
