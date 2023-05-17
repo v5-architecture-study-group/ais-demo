@@ -76,7 +76,7 @@ class VesselMap extends Composite<Map> implements HasSize {
         return markers.computeIfAbsent(mmsi, VesselMarker::new);
     }
 
-    public State getState() {
+    public State state() {
         return new State(getContent().getCenter(), getContent().getZoom());
     }
 
@@ -90,6 +90,9 @@ class VesselMap extends Composite<Map> implements HasSize {
             Coordinate center,
             double zoom
     ) {
+
+        static final State DEFAULT = new State(new Coordinate(21, 60), 10);
+
     }
 
     private void onMapFeatureClickEvent(MapFeatureClickEvent event) {

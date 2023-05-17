@@ -9,10 +9,13 @@ import com.example.demo.ais.service.api.VesselService;
 import com.example.demo.ais.util.Subscription;
 import com.vaadin.flow.component.AttachEvent;
 import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
 
+import java.time.ZoneId;
+import java.time.format.TextStyle;
 import java.util.List;
 
 @Route("")
@@ -21,14 +24,26 @@ public class MapRoute extends VerticalLayout {
     private static final int MAX_VESSELS_ON_MAP = 15000;
     private final VesselService vesselService;
     private final VesselDetailsPopupFactory vesselDetailsPopupFactory;
+    private final ComboBox<ZoneId> timeZone;
     private final VesselMap map;
+    private final UserPreferences userPreferences;
     private Subscription vesselEventsSubscription;
 
-    public MapRoute(VesselService vesselService, VesselDetailsPopupFactory vesselDetailsPopupFactory) {
+    public MapRoute(VesselService vesselService, VesselDetailsPopupFactory vesselDetailsPopupFactory, UserPreferences userPreferences) {
         this.vesselService = vesselService;
         this.vesselDetailsPopupFactory = vesselDetailsPopupFactory;
+        this.userPreferences = userPreferences;
+
+        timeZone = new ComboBox<>();
+        timeZone.setItemLabelGenerator(z -> z.getDisplayName(TextStyle.FULL, getLocale()));
+        timeZone.setItems(ZoneId.of("UTC"), ZoneId.of("Europe/Helsinki"), ZoneId.of("Europe/Berlin"), ZoneId.of("America/Denver"));
+        timeZone.addValueChangeListener(v -> userPreferences.setTimeZone(v.getValue()));
+        timeZone.setValue(userPreferences.timeZone());
+
         map = new VesselMap();
         map.setSizeFull();
+        map.setState(userPreferences.mapState());
+        add(timeZone);
         add(map);
         setSizeFull();
         map.setVesselClickedCallback(this::onVesselClicked);
@@ -51,6 +66,7 @@ public class MapRoute extends VerticalLayout {
 
     private void onEnvelopeChanged(Envelope envelope) {
         map.addOrUpdateVessels(vesselService.vesselLocations(envelope, MAX_VESSELS_ON_MAP));
+        userPreferences.setMapState(map.state());
     }
 
     @Override
