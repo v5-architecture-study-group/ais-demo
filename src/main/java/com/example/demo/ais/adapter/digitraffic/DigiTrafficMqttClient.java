@@ -17,6 +17,7 @@ import org.eclipse.paho.client.mqttv3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.ExecutorService;
@@ -35,6 +36,7 @@ class DigiTrafficMqttClient {
     private static final Duration KEEP_ALIVE_INTERVAL = Duration.ofMinutes(1);
     private final ScheduledExecutorService mqttReconnectionThread;
     private final ExecutorService subscriberNotificationThread;
+    private final Clock clock;
     private final SubscriberList<Consumer<VesselEvent>> vesselEventSubscribers = new SubscriberList<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final IMqttClient mqttClient;
@@ -48,9 +50,11 @@ class DigiTrafficMqttClient {
     DigiTrafficMqttClient(
             ScheduledExecutorService mqttReconnectionThread,
             ExecutorService subscriberNotificationThread,
-            MeterRegistry meterRegistry) {
+            MeterRegistry meterRegistry,
+            Clock clock) {
         this.mqttReconnectionThread = mqttReconnectionThread;
         this.subscriberNotificationThread = subscriberNotificationThread;
+        this.clock = clock;
         this.receivedStatusMessages = meterRegistry.counter("ais.mqtt.status.received-messages");
         this.receivedVesselLocationMessages = meterRegistry.counter("ais.mqtt.vessel-location.received-messages");
         this.receivedVesselMetadataMessages = meterRegistry.counter("ais.mqtt.vessel-metadata.received-messages");
@@ -85,7 +89,7 @@ class DigiTrafficMqttClient {
         tryConnectToMqtt();
     }
 
-    void destroy() {
+    synchronized void destroy() {
         try {
             if (mqttClient.isConnected()) {
                 log.info("Disconnecting from MQTT");
@@ -100,7 +104,7 @@ class DigiTrafficMqttClient {
         return vesselEventSubscribers.subscribe(subscriber);
     }
 
-    private void tryConnectToMqtt() {
+    private synchronized void tryConnectToMqtt() {
         try {
             var options = new MqttConnectOptions();
             options.setAutomaticReconnect(false); // We're handling this manually to be able to re-subscribe
@@ -138,13 +142,16 @@ class DigiTrafficMqttClient {
     private Result<VesselLocation> convertToVesselLocation(String topic, MqttMessage message) {
         try {
             VesselLocationMessage vlm = objectMapper.readerFor(VesselLocationMessage.class).readValue(message.getPayload());
+            // The timestamp coming from this message might not be the actual timestamp but only the UTC second.
+            // Therefore, we ignore it and use the current timestamp instead.
             var mmsi = extractMMSIFromTopicName(topic);
-            var timestamp = Instant.ofEpochMilli(vlm.time());
             var lon = new Longitude(vlm.lon());
             var lat = new Latitude(vlm.lat());
             var heading = Heading.ofDegrees(vlm.heading());
             var position = vlm.posAcc() ? new AccuratePosition(lat, lon) : new InaccuratePosition(lat, lon);
-            return Result.success(new VesselLocation(timestamp, mmsi, position, heading));
+            var cog = CourseOverGround.ofDegrees(vlm.cog());
+            var sog = SpeedOverGround.ofKnots(vlm.sog());
+            return Result.success(new VesselLocation(clock.instant(), mmsi, position, heading, cog, sog));
         } catch (Throwable ex) {
             return Result.failure(ex);
         }

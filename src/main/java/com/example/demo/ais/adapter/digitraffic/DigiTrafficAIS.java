@@ -11,6 +11,7 @@ import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Clock;
 import java.util.Collection;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
@@ -24,12 +25,12 @@ class DigiTrafficAIS implements AIS {
     private final ScheduledExecutorService mqttReconnectionThread;
     private final ExecutorService subscriberNotificationThread;
 
-    public DigiTrafficAIS(MeterRegistry meterRegistry) {
+    public DigiTrafficAIS(MeterRegistry meterRegistry, Clock clock) {
         log.info("Starting MQTT reconnection thread");
         mqttReconnectionThread = Executors.newSingleThreadScheduledExecutor();
         log.info("Starting subscriber notification thread");
         subscriberNotificationThread = new ThreadPoolExecutor(1, 1, 0, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(SUBSCRIBER_NOTIFICATION_JOB_QUEUE_CAPACITY));
-        mqttClient = new DigiTrafficMqttClient(mqttReconnectionThread, subscriberNotificationThread, meterRegistry);
+        mqttClient = new DigiTrafficMqttClient(mqttReconnectionThread, subscriberNotificationThread, meterRegistry, clock);
     }
 
     @PreDestroy

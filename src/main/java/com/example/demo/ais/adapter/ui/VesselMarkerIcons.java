@@ -8,24 +8,36 @@ import java.util.HashMap;
 
 final class VesselMarkerIcons {
 
-    private static final HashMap<Heading, Icon> VESSEL_MARKER_ICONS = new HashMap<>();
+    private static final HashMap<Heading, Icon> MOVING_VESSEL_MARKER_ICONS = new HashMap<>();
+    private static final HashMap<Heading, Icon> NON_MOVING_VESSEL_MARKER_ICONS = new HashMap<>();
 
     static {
         for (int i = 0; i < 360; ++i) {
-            var iconOptions = new Icon.Options();
-            iconOptions.setSrc("markers/vessel.svg");
-            iconOptions.setRotation(i * Math.PI / 180);
-            VESSEL_MARKER_ICONS.put(Heading.ofDegrees(i), new Icon(iconOptions));
+            var h = Heading.ofDegrees(i);
+            MOVING_VESSEL_MARKER_ICONS.put(h, createIcon("markers/vessel.svg", h));
+            NON_MOVING_VESSEL_MARKER_ICONS.put(h, createIcon("markers/non-moving-vessel.svg", h));
         }
+        MOVING_VESSEL_MARKER_ICONS.put(Heading.UNAVAILABLE, createIcon("markers/vessel-no-bearing.svg", Heading.UNAVAILABLE));
+        NON_MOVING_VESSEL_MARKER_ICONS.put(Heading.UNAVAILABLE, createIcon("markers/non-moving-vessel-no-bearing.svg", Heading.UNAVAILABLE));
+    }
+
+    private static Icon createIcon(String src, Heading heading) {
         var iconOptions = new Icon.Options();
-        iconOptions.setSrc("markers/vessel-no-bearing.svg");
-        VESSEL_MARKER_ICONS.put(Heading.UNAVAILABLE, new Icon(iconOptions));
+        iconOptions.setSrc(src);
+        if (!heading.isUnavailable()) {
+            iconOptions.setRotation(heading.radians());
+        }
+        return new Icon(iconOptions);
     }
 
     private VesselMarkerIcons() {
     }
 
-    public static Icon getIcon(Heading heading) {
-        return VESSEL_MARKER_ICONS.getOrDefault(heading, MarkerFeature.POINT_ICON);
+    public static Icon getMovingVesselIcon(Heading heading) {
+        return MOVING_VESSEL_MARKER_ICONS.getOrDefault(heading, MarkerFeature.POINT_ICON);
+    }
+
+    public static Icon getNonMovingVesselIcon(Heading heading) {
+        return NON_MOVING_VESSEL_MARKER_ICONS.getOrDefault(heading, MarkerFeature.POINT_ICON);
     }
 }

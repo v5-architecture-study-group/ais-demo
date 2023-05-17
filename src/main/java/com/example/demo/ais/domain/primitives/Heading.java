@@ -12,10 +12,10 @@ public final class Heading {
     private final int heading;
 
     private Heading(int heading) {
-        if (heading < 0 || (heading > 360 && heading != UNAVAILABLE_HEADING)) {
-            throw new IllegalArgumentException("Heading must be between 0° and 360°");
+        if (heading < 0 || (heading > 359 && heading != UNAVAILABLE_HEADING)) {
+            throw new IllegalArgumentException("Heading must be between 0° and 359° (inclusive)");
         }
-        this.heading = heading == 360 ? 0 : heading;
+        this.heading = heading;
     }
 
     public static Heading ofDegrees(int heading) {
@@ -26,8 +26,12 @@ public final class Heading {
         }
     }
 
-    public int value() {
+    public int degrees() {
         return heading;
+    }
+
+    public double radians() {
+        return heading * Math.PI / 180;
     }
 
     public boolean isUnavailable() {

@@ -32,6 +32,8 @@ public class VesselDetailsPopup extends Dialog {
             addAttribute("Longitude", Formatters.formatLongitude(vesselLocation.position().longitude(), getLocale()));
             addAttribute("Position quality", Formatters.formatPositionAccuracy(vesselLocation.position(), getLocale()));
             addAttribute("Heading", Formatters.formatHeading(vesselLocation.heading(), getLocale()));
+            addAttribute("SOG", Formatters.formatSOG(vesselLocation.sog(), getLocale()));
+            addAttribute("COG", Formatters.formatCOG(vesselLocation.cog(), getLocale()));
             addAttribute("Location last updated", Formatters.formatInstant(vesselLocation.timestamp(), timeZone, getLocale()));
         });
     }

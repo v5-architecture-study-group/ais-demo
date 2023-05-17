@@ -57,7 +57,7 @@ class VesselServiceImpl implements VesselService {
 
     private boolean isNotOutdated(VesselLocation vesselLocation) {
         var oldestAcceptedLocationUpdate = clock.instant().minus(VESSEL_LOCATION_MAX_AGE);
-        return vesselLocation.timestamp().toEpochMilli() == 0 || oldestAcceptedLocationUpdate.isBefore(vesselLocation.timestamp());
+        return oldestAcceptedLocationUpdate.isBefore(vesselLocation.timestamp());
     }
 
     @PreDestroy

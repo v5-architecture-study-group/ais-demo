@@ -134,7 +134,11 @@ class VesselMap extends Composite<Map> implements HasSize {
 
         void update(VesselLocation vesselLocation) {
             position = vesselLocation.position();
-            marker.setIcon(VesselMarkerIcons.getIcon(vesselLocation.heading()));
+            if (vesselLocation.sog().knotTenths() == 0) {
+                marker.setIcon(VesselMarkerIcons.getNonMovingVesselIcon(vesselLocation.heading()));
+            } else {
+                marker.setIcon(VesselMarkerIcons.getMovingVesselIcon(vesselLocation.heading()));
+            }
             marker.setCoordinates(new Coordinate(vesselLocation.position().longitude().value(),
                     vesselLocation.position().latitude().value()));
         }

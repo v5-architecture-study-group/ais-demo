@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Clock;
+
 @Configuration
 class AISConfig {
 
@@ -15,9 +17,9 @@ class AISConfig {
 
     @Bean
     @ConditionalOnProperty(name = "ais.source", havingValue = "digitraffic")
-    public AIS digitTrafficAIS(MeterRegistry meterRegistry) {
+    public AIS digitTrafficAIS(MeterRegistry meterRegistry, Clock clock) {
         log.info("Loading AIS data from Digitraffic");
-        return new DigiTrafficAIS(meterRegistry);
+        return new DigiTrafficAIS(meterRegistry, clock);
     }
 
     @Bean

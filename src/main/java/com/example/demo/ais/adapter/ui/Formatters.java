@@ -26,7 +26,7 @@ final class Formatters {
         var h = dd < 0 ? 'S' : 'N';
         var degrees = (int) Math.abs(dd);
         var minutes = (Math.abs(dd) - degrees) * 60;
-        return String.format(locale, "%s %02d° %.3f", h, degrees, minutes);
+        return String.format(locale, "%s %02d° %.3f'", h, degrees, minutes);
     }
 
     public static String formatLongitude(Longitude longitude, Locale locale) {
@@ -42,7 +42,21 @@ final class Formatters {
         if (heading.isUnavailable()) {
             return "Unavailable"; // TODO Use the locale to get a localized version
         }
-        return "%03d°".formatted(heading.value());
+        return "%03d°".formatted(heading.degrees());
+    }
+
+    public static String formatCOG(CourseOverGround cog, Locale locale) {
+        if (cog.isUnavailable()) {
+            return "Unavailable"; // TODO Use the locale to get a localized version
+        }
+        return "%03.1f°".formatted(cog.degrees());
+    }
+
+    public static String formatSOG(SpeedOverGround sog, Locale locale) {
+        if (sog.isUnavailable()) {
+            return "Unavailable"; // TODO Use the locale to get a localized version
+        }
+        return "%.1f knots (%.1f km/h)".formatted(sog.knots(), sog.kilometersPerHour());
     }
 
     public static String formatPositionAccuracy(Position position, Locale locale) {

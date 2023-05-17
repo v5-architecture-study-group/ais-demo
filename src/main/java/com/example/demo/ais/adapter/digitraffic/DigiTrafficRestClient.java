@@ -68,7 +68,9 @@ class DigiTrafficRestClient {
             var lat = new Latitude(feature.geometry().coordinates()[1]);
             var heading = Heading.ofDegrees(feature.properties().heading());
             var position = feature.properties().posAcc() ? new AccuratePosition(lat, lon) : new InaccuratePosition(lat, lon);
-            return Stream.of(new VesselLocation(timestamp, mmsi, position, heading));
+            var cog = CourseOverGround.ofDegrees(feature.properties().cog());
+            var sog = SpeedOverGround.ofKnots(feature.properties().sog());
+            return Stream.of(new VesselLocation(timestamp, mmsi, position, heading, cog, sog));
         } catch (Throwable ex) {
             log.debug(feature.toString());
             log.debug("Exception while parsing vessel location", ex);
