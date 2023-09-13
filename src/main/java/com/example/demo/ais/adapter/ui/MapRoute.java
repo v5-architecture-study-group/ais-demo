@@ -29,7 +29,7 @@ public class MapRoute extends VerticalLayout {
     private final UserPreferences userPreferences;
     private Subscription vesselEventsSubscription;
 
-    public MapRoute(VesselService vesselService, VesselDetailsPopupFactory vesselDetailsPopupFactory, UserPreferences userPreferences) {
+    MapRoute(VesselService vesselService, VesselDetailsPopupFactory vesselDetailsPopupFactory, UserPreferences userPreferences) {
         this.vesselService = vesselService;
         this.vesselDetailsPopupFactory = vesselDetailsPopupFactory;
         this.userPreferences = userPreferences;
